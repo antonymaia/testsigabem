@@ -3,8 +3,10 @@ package br.antony.sigabem.services;
 import br.antony.sigabem.entities.FreteEntity;
 import br.antony.sigabem.entities.ViacepEntity;
 import br.antony.sigabem.repositories.FreteRepository;
+import br.antony.sigabem.services.exception.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -24,16 +26,30 @@ public class FreteService {
                 .method(HttpMethod.GET)
                 .uri("https://viacep.com.br/ws/{cep}/json/", cepOrigem)
                 .retrieve()
+                .onStatus(HttpStatus::isError, reponse ->{
+                    return Mono.error(new BadRequestException("cepOrigem inválido"));
+                })
                 .bodyToMono(ViacepEntity.class);
 
         Mono<ViacepEntity> monoViacepDestino = webClient
                 .method(HttpMethod.GET)
                 .uri("https://viacep.com.br/ws/{cep}/json/", cepDestino)
                 .retrieve()
+                .onStatus(HttpStatus::isError, reponse ->{
+                    return Mono.error(new BadRequestException("cepDestino inválido"));
+                })
                 .bodyToMono(ViacepEntity.class);
 
         ViacepEntity viacepOrigem = monoViacepOrigim.block();
         ViacepEntity viacepDestino = monoViacepDestino.block();
+
+        if(viacepOrigem.isErro()){
+            throw new BadRequestException("cepOrigem inválido");
+        }
+
+        if(viacepDestino.isErro()){
+            throw new BadRequestException("cepDestino inválido");
+        }
 
         FreteEntity frete = new FreteEntity();
         frete.setNomeDestinatario(nomeDestinatario);

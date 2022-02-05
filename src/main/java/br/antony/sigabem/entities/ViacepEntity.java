@@ -8,4 +8,5 @@ public class ViacepEntity {
     private String cep;
     private String uf;
     private String ddd;
+    private boolean erro;
 }
